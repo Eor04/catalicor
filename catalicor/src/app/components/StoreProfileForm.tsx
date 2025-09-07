@@ -26,7 +26,6 @@ export default function StoreProfileForm() {
   useEffect(() => {
     async function fetchStoreData() {
       if (!storeId) return;
-
       try {
         const storeDocRef = doc(db, "stores", storeId);
         const storeDoc = await getDoc(storeDocRef);
@@ -34,13 +33,14 @@ export default function StoreProfileForm() {
           setStoreData(storeDoc.data() as typeof storeData);
         }
       } catch (err) {
-        console.error("Error fetching store data:", err);
-        setError("Error al cargar los datos de la tienda.");
+        if (err instanceof Error) {
+          console.error("Error fetching store data:", err.message);
+          setError("Error al cargar los datos de la tienda.");
+        }
       } finally {
         setLoading(false);
       }
     }
-
     fetchStoreData();
   }, [storeId]);
 
@@ -82,13 +82,9 @@ export default function StoreProfileForm() {
 
       setSuccess("¡Perfil actualizado con éxito!");
     } catch (err) {
-      console.error("Error saving store data:", err);
-  // El error puede ser de cualquier tipo, lo convertimos a string
-  // para mostrarlo al usuario de forma segura.
       if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Error al actualizar el perfil.");
+        console.error("Error saving store data:", err.message);
+        setError(err.message || "Error al actualizar el perfil.");
       }
     } finally {
       setLoading(false);

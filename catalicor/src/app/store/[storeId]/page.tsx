@@ -4,8 +4,8 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/utils/firebaseConfig';
-import { useCart } from '@/app/context/CartContext'; // Importa el hook del carrito
-import { useSession } from 'next-auth/react'; // Importa el hook de la sesión
+import { useCart } from '@/app/context/CartContext';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 
 interface Product {
@@ -24,15 +24,14 @@ interface Store {
 
 export default function StorePage({ params }: { params: { storeId: string } }) {
   const { storeId } = params;
-  const { data: session, status } = useSession(); // Usa el hook de la sesión
-  const { addToCart } = useCart(); // Usa el hook del carrito
+  const { data: session, status } = useSession();
+  const { addToCart } = useCart();
   const [store, setStore] = useState<Store | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // La lógica de la llamada a la base de datos es la misma
     async function fetchData() {
       try {
         const storeDocRef = doc(db, "stores", storeId);
@@ -51,8 +50,10 @@ export default function StorePage({ params }: { params: { storeId: string } }) {
         setProducts(productsList);
 
       } catch (err) {
-        console.error("Error fetching data:", err);
-        setError("Error al cargar los datos de la tienda.");
+        if (err instanceof Error) {
+          console.error("Error fetching data:", err.message);
+          setError("Error al cargar los datos de la tienda.");
+        }
       } finally {
         setLoading(false);
       }

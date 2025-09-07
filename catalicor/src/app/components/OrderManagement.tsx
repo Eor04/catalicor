@@ -40,10 +40,8 @@ export default function OrderManagement() {
       setLoading(false);
       return;
     }
-
     const ordersCollection = collection(db, "orders");
     const q = query(ordersCollection, where("storeId", "==", storeId));
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ordersList: Order[] = snapshot.docs.map(d => ({
         id: d.id,
@@ -57,7 +55,6 @@ export default function OrderManagement() {
         setError("Error al cargar los pedidos.");
       }
     });
-
     return () => unsubscribe();
   }, [storeId]);
 

@@ -1,6 +1,6 @@
 // app/api/auth/[...nextauth]/route.ts
 
-import NextAuth from "next-auth";
+import NextAuth, { AuthOptions, type Account, type User, type Session, type JWT } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
@@ -9,7 +9,7 @@ import { doc, getDoc } from "firebase/firestore";
 
 const auth = getAuth(app);
 
-const authOptions = {
+const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -37,15 +37,15 @@ const authOptions = {
             email: user.email,
             name: user.email,
           };
-        } catch (error) {
-          console.error("Error signing in with credentials:", error);
+        } catch (err) {
+          console.error("Error signing in with credentials:", err);
           return null;
         }
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account }: { token: any, user: any, account: any }) {
+    async jwt({ token, user, account }) {
       if (account) {
         token.accessToken = account.access_token;
       }
@@ -57,10 +57,13 @@ const authOptions = {
       }
       return token;
     },
-    async session({ session, token }: { session: any, token: any }) {
-      session.accessToken = token.accessToken;
+    async session({ session, token }) {
+      // Usamos el tipo `any` aquí solo para evitar el error de tipado estricto
+      // ya que la firma de `session` es muy compleja. Los tipos de `next-auth.d.ts`
+      // garantizan que el resultado sea seguro.
+      (session as any).accessToken = token.accessToken;
       if (session.user) {
-        session.user.role = token.role;
+        (session.user as any).role = token.role;
       }
       return session;
     },

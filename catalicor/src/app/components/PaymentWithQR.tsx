@@ -1,9 +1,10 @@
 // src/app/components/PaymentWithQR.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/utils/firebaseConfig';
+import Image from 'next/image';
 
 interface PaymentWithQRProps {
   storeId: string;
@@ -34,16 +35,16 @@ export default function PaymentWithQR({ storeId, qrImageURL, onPaymentSuccess }:
     }
 
     try {
-      // Subir el comprobante a Firebase Storage
       const receiptRef = ref(storage, `receipts/${storeId}/${Date.now()}-${receiptFile.name}`);
       await uploadBytes(receiptRef, receiptFile);
       const receiptURL = await getDownloadURL(receiptRef);
 
-      // Llamar a la función de éxito con la URL del comprobante
       onPaymentSuccess(receiptURL);
-    } catch (err: any) {
-      console.error("Error al subir el comprobante:", err);
-      setError("Error al subir el comprobante. Por favor, inténtalo de nuevo.");
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error("Error al subir el comprobante:", err.message);
+        setError("Error al subir el comprobante. Por favor, inténtalo de nuevo.");
+      }
     } finally {
       setLoading(false);
     }
@@ -55,12 +56,11 @@ export default function PaymentWithQR({ storeId, qrImageURL, onPaymentSuccess }:
       {qrImageURL ? (
         <div className="text-center mb-4">
           <p className="text-gray-600 mb-2">Escanea el código QR para pagar:</p>
-          <img src={qrImageURL} alt="Código QR de la tienda" className="mx-auto w-48 h-48 object-contain border p-2" />
+          <Image src={qrImageURL} alt="Código QR de la tienda" width={192} height={192} className="mx-auto w-48 h-48 object-contain border p-2" />
         </div>
       ) : (
         <p className="text-red-500 mb-4 text-center">No se encontró el código QR de la tienda.</p>
       )}
-
       <div className="mb-4">
         <label htmlFor="receipt" className="block text-sm font-medium text-gray-700">Subir Comprobante de Pago</label>
         <input
@@ -71,9 +71,7 @@ export default function PaymentWithQR({ storeId, qrImageURL, onPaymentSuccess }:
           className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
         />
       </div>
-
       {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-
       <button
         type="submit"
         disabled={loading || !qrImageURL}

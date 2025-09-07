@@ -2,7 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
@@ -13,7 +12,6 @@ const auth = getAuth(app);
 
 export default function CreateStoreForm() {
   const { data: session } = useSession();
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [storeName, setStoreName] = useState('');
@@ -25,7 +23,6 @@ export default function CreateStoreForm() {
     setError(null);
     setLoading(true);
 
-    // Verifica si el usuario actual es un administrador
     if (session?.user?.role !== 'admin') {
       setError("Acceso denegado. Solo los administradores pueden crear licorerías.");
       setLoading(false);
@@ -33,11 +30,9 @@ export default function CreateStoreForm() {
     }
 
     try {
-      // 1. Crear el usuario en Firebase Authentication con el rol 'store'
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Guardar los datos del usuario y la tienda en Firestore
       await setDoc(doc(db, "users", user.uid), {
         email: user.email,
         role: "store",
@@ -45,7 +40,6 @@ export default function CreateStoreForm() {
         createdAt: new Date(),
       });
 
-      // 3. Guardar los datos de la tienda en su propia colección
       await setDoc(doc(db, "stores", user.uid), {
         name: storeName,
         userId: user.uid,
@@ -56,9 +50,11 @@ export default function CreateStoreForm() {
       setEmail('');
       setPassword('');
       setStoreName('');
-    } catch (err: any) {
-      console.error("Error al crear la licorería:", err.message);
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error("Error al crear la licorería:", err.message);
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -67,7 +63,7 @@ export default function CreateStoreForm() {
   return (
     <form onSubmit={handleSubmit} className="p-8 border rounded-md shadow-lg w-full max-w-sm mx-auto">
       <h2 className="text-2xl font-bold mb-4 text-center">Crear Licorería</h2>
-
+      
       {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
 
       <div className="mb-4">
@@ -81,7 +77,6 @@ export default function CreateStoreForm() {
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
         />
       </div>
-
       <div className="mb-4">
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">Correo Electrónico</label>
         <input
@@ -93,7 +88,6 @@ export default function CreateStoreForm() {
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
         />
       </div>
-
       <div className="mb-6">
         <label htmlFor="password" className="block text-sm font-medium text-gray-700">Contraseña</label>
         <input
@@ -105,7 +99,6 @@ export default function CreateStoreForm() {
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
         />
       </div>
-
       <button
         type="submit"
         disabled={loading}

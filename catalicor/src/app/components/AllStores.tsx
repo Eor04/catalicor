@@ -2,10 +2,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, getDocs } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/utils/firebaseConfig';
 import Link from 'next/link';
-import Image from 'next/image';
 
 interface Store {
   id: string;

@@ -1,7 +1,7 @@
 // src/app/cart/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -22,19 +22,16 @@ export default function CartPage() {
       alert("El carrito está vacío.");
       return;
     }
-
     if (!session || !session.user) {
       alert("Debes iniciar sesión para realizar un pedido.");
       router.push('/login');
       return;
     }
-
     const storeId = cart[0].storeId;
     if (cart.some(item => item.storeId !== storeId)) {
       alert("No puedes tener productos de más de una tienda en tu carrito.");
       return;
     }
-
     try {
       const storeDoc = await getDoc(doc(db, "stores", storeId));
       if (storeDoc.exists()) {
@@ -145,4 +142,4 @@ export default function CartPage() {
       )}
     </div>
   );
-} 
+}
