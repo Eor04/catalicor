@@ -45,7 +45,7 @@ const authOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account }: { token: any, user: any, account: any }) {
       if (account) {
         token.accessToken = account.access_token;
       }
@@ -57,7 +57,7 @@ const authOptions = {
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any, token: any }) {
       session.accessToken = token.accessToken;
       if (session.user) {
         session.user.role = token.role;
