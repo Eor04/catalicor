@@ -6,6 +6,7 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { db } from '@/utils/firebaseConfig';
 import { useCart } from '@/app/context/CartContext'; // Importa el hook del carrito
 import { useSession } from 'next-auth/react'; // Importa el hook de la sesión
+import Image from 'next/image';
 
 interface Product {
   id: string;
@@ -86,7 +87,7 @@ export default function StorePage({ params }: { params: { storeId: string } }) {
         ) : (
           products.map(product => (
             <div key={product.id} className="border rounded-lg shadow-md p-4 flex flex-col items-center text-center">
-              <img src={product.imageURL} alt={product.name} className="w-40 h-40 object-cover mb-4" />
+              <Image src={product.imageURL} alt={product.name} width={160} height={160} className="w-40 h-40 object-cover mb-4" />
               <h3 className="text-xl font-semibold">{product.name}</h3>
               <p className="text-gray-600 mt-1">Precio: **${product.price}**</p>
               <p className="text-gray-500 text-sm">Stock: {product.stock}</p>

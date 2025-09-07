@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { collection, addDoc, query, where, onSnapshot, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/utils/firebaseConfig';
+import Image from 'next/image';
 
 interface Product {
   id: string;
@@ -26,10 +27,8 @@ export default function ProductManagement() {
   
   const storeId = session?.user?.id;
 
-  // Lógica para obtener productos en tiempo real
   useEffect(() => {
     if (!storeId) return;
-
     const q = query(collection(db, "products"), where("storeId", "==", storeId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const productsList: Product[] = [];
@@ -38,13 +37,12 @@ export default function ProductManagement() {
       });
       setProducts(productsList);
     });
-
     return () => unsubscribe();
   }, [storeId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setProductForm(prev => ({ ...prev, [name]: value }));
+    setProductForm(prev => ({ ...prev, [name]: value as any }));
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,18 +55,15 @@ export default function ProductManagement() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     if (!storeId || !imageFile) {
       setError("Falta el ID de la tienda o la imagen.");
       setLoading(false);
       return;
     }
-
     try {
       const imageRef = ref(storage, `product-images/${storeId}/${imageFile.name}`);
       await uploadBytes(imageRef, imageFile);
       const imageURL = await getDownloadURL(imageRef);
-
       const newProduct = {
         ...productForm,
         price: parseFloat(productForm.price.toString()),
@@ -76,18 +71,20 @@ export default function ProductManagement() {
         imageURL,
         storeId,
       };
-
       if (editingId) {
-        await updateDoc(doc(db, "products", editingId), newProduct);
+        await updateDoc(doc(db, "products", editingId), newProduct as any);
         setEditingId(null);
       } else {
         await addDoc(collection(db, "products"), newProduct);
       }
-      
       setProductForm({ name: '', price: 0, stock: 0 });
       setImageFile(null);
-    } catch (err: any) {
-      setError("Error al guardar el producto: " + err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError("Error al guardar el producto: " + err.message);
+      } else {
+        setError("Error al guardar el producto.");
+      }
     } finally {
       setLoading(false);
     }
@@ -97,8 +94,12 @@ export default function ProductManagement() {
     if (window.confirm("¿Estás seguro de que quieres eliminar este producto?")) {
       try {
         await deleteDoc(doc(db, "products", productId));
-      } catch (err: any) {
-        setError("Error al eliminar el producto: " + err.message);
+      } catch (err) {
+        if (err instanceof Error) {
+          setError("Error al eliminar el producto: " + err.message);
+        } else {
+          setError("Error al eliminar el producto.");
+        }
       }
     }
   };
@@ -136,12 +137,10 @@ export default function ProductManagement() {
           {loading ? 'Guardando...' : (editingId ? 'Guardar Cambios' : 'Añadir Producto')}
         </button>
       </form>
-
-      {/* Lista de productos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {products.map(product => (
           <div key={product.id} className="border rounded-md shadow-md p-4 flex flex-col items-center text-center">
-            <img src={product.imageURL} alt={product.name} className="w-32 h-32 object-cover mb-2" />
+            <Image src={product.imageURL} alt={product.name} width={128} height={128} className="w-32 h-32 object-cover mb-2" />
             <h4 className="text-lg font-semibold">{product.name}</h4>
             <p className="text-gray-600">Precio: ${product.price}</p>
             <p className="text-gray-600">Stock: {product.stock}</p>

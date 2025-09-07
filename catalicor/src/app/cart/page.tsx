@@ -1,13 +1,14 @@
 // src/app/cart/page.tsx
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/utils/firebaseConfig';
 import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
-import PaymentWithQR from '../components/PaymentWithQR'; // Importa el nuevo componente
-import { useState } from 'react';
+import PaymentWithQR from '../components/PaymentWithQR';
+import Image from 'next/image';
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
@@ -28,7 +29,6 @@ export default function CartPage() {
       return;
     }
 
-    // Un cliente solo puede comprar de una tienda a la vez
     const storeId = cart[0].storeId;
     if (cart.some(item => item.storeId !== storeId)) {
       alert("No puedes tener productos de más de una tienda en tu carrito.");
@@ -49,16 +49,16 @@ export default function CartPage() {
         alert("Información de la tienda no encontrada.");
       }
     } catch (err) {
-      console.error("Error fetching QR code:", err);
-      alert("Error al obtener el código QR.");
+      if (err instanceof Error) {
+        console.error("Error fetching QR code:", err.message);
+        alert("Error al obtener el código QR.");
+      }
     }
   };
 
   const handleCheckout = async (receiptURL: string) => {
     try {
-      // Un cliente solo puede comprar de una tienda a la vez
       const storeId = cart[0].storeId;
-
       const orderDoc = {
         userId: session?.user?.id,
         storeId: storeId,
@@ -71,17 +71,18 @@ export default function CartPage() {
         total: getCartTotal(),
         status: 'pending_payment_verification',
         paymentMethod: 'qr_transfer',
-        receiptURL: receiptURL, // Guardar la URL del comprobante
+        receiptURL: receiptURL,
         createdAt: serverTimestamp(),
       };
       await addDoc(collection(db, "orders"), orderDoc);
-
       alert("¡Pedido realizado con éxito! El pago será verificado por la tienda.");
       clearCart();
       router.push('/');
     } catch (err) {
-      console.error("Error al procesar el pedido:", err);
-      alert("Hubo un error al procesar tu pedido. Por favor, inténtalo de nuevo.");
+      if (err instanceof Error) {
+        console.error("Error al procesar el pedido:", err.message);
+        alert("Hubo un error al procesar tu pedido. Por favor, inténtalo de nuevo.");
+      }
     }
   };
 
@@ -92,14 +93,13 @@ export default function CartPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Tu Carrito de Compras</h1>
-      
       {!isPaymentStep ? (
         <>
           <div className="grid grid-cols-1 gap-6">
             {cart.map(item => (
               <div key={item.id} className="flex items-center justify-between border-b pb-4">
                 <div className="flex items-center space-x-4">
-                  <img src={item.imageURL} alt={item.name} className="w-16 h-16 object-cover rounded-md" />
+                  <Image src={item.imageURL} alt={item.name} width={64} height={64} className="w-16 h-16 object-cover rounded-md" />
                   <div>
                     <h3 className="text-lg font-semibold">{item.name}</h3>
                     <p className="text-gray-600">${item.price}</p>
@@ -145,4 +145,4 @@ export default function CartPage() {
       )}
     </div>
   );
-}
+} 

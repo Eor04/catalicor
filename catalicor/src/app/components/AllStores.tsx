@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, getDocs } from 'firebase/firestore';
 import { db } from '@/utils/firebaseConfig';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Store {
   id: string;
@@ -29,8 +30,11 @@ export default function AllStores() {
         } as Store));
         setStores(storesList);
       } catch (err) {
-        console.error("Error fetching stores:", err);
-        setError("Error al cargar las licorerías.");
+        if (err instanceof Error) {
+          setError("Error al cargar las licorerías: " + err.message);
+        } else {
+          setError("Error al cargar las licorerías.");
+        }
       } finally {
         setLoading(false);
       }

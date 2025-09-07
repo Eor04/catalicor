@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/utils/firebaseConfig';
+import Image from 'next/image';
 
 export default function StoreProfileForm() {
   const { data: session } = useSession();
@@ -80,9 +81,15 @@ export default function StoreProfileForm() {
       }, { merge: true });
 
       setSuccess("¡Perfil actualizado con éxito!");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error saving store data:", err);
-      setError(err.message || "Error al actualizar el perfil.");
+  // El error puede ser de cualquier tipo, lo convertimos a string
+  // para mostrarlo al usuario de forma segura.
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Error al actualizar el perfil.");
+      }
     } finally {
       setLoading(false);
     }
@@ -115,7 +122,7 @@ export default function StoreProfileForm() {
         {storeData.qrImageURL && (
           <div className="mt-2">
             <p className="text-sm text-gray-500">QR actual:</p>
-            <img src={storeData.qrImageURL} alt="QR de la tienda" className="mt-1 w-32 h-32 object-contain" />
+            <Image src={storeData.qrImageURL} alt="QR de la tienda" width={128} height={128} className="mt-1 w-32 h-32 object-contain" />
           </div>
         )}
       </div>

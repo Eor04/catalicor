@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { db } from '@/utils/firebaseConfig';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import Image from 'next/image';
 
 interface OrderItem {
   name: string;
@@ -18,8 +19,8 @@ interface Order {
   items: OrderItem[];
   total: number;
   status: string;
-  paymentMethod?: string; // Añadimos la propiedad opcional
-  receiptURL?: string; // Añadimos la URL del comprobante
+  paymentMethod?: string;
+  receiptURL?: string;
   createdAt: {
     seconds: number;
     nanoseconds: number;
@@ -51,9 +52,10 @@ export default function OrderManagement() {
       setOrders(ordersList);
       setLoading(false);
     }, (err) => {
-      console.error("Error fetching orders:", err);
-      setError("Error al cargar los pedidos.");
-      setLoading(false);
+      if (err instanceof Error) {
+        console.error("Error fetching orders:", err.message);
+        setError("Error al cargar los pedidos.");
+      }
     });
 
     return () => unsubscribe();
@@ -64,8 +66,10 @@ export default function OrderManagement() {
       const orderRef = doc(db, "orders", orderId);
       await updateDoc(orderRef, { status: newStatus });
     } catch (err) {
-      console.error("Error updating order status:", err);
-      setError("No se pudo actualizar el estado del pedido.");
+      if (err instanceof Error) {
+        console.error("Error updating order status:", err.message);
+        setError("No se pudo actualizar el estado del pedido.");
+      }
     }
   };
 
@@ -98,16 +102,14 @@ export default function OrderManagement() {
               </div>
               <p className="text-sm text-gray-500 mb-4">Total: **${order.total.toFixed(2)}**</p>
               
-              {/* Sección para el comprobante de pago */}
               {order.paymentMethod === 'qr_transfer' && order.receiptURL && (
                 <div className="my-4">
                   <p className="text-sm font-semibold mb-2">Comprobante de Pago:</p>
                   <a href={order.receiptURL} target="_blank" rel="noopener noreferrer">
-                    <img src={order.receiptURL} alt="Comprobante de Pago" className="w-48 h-auto border rounded-md" />
+                    <Image src={order.receiptURL} alt="Comprobante de Pago" width={192} height={192} className="w-48 h-auto border rounded-md" />
                   </a>
                 </div>
               )}
-
               <div className="border-t pt-2">
                 {order.items.map((item, index) => (
                   <p key={index} className="text-sm">
